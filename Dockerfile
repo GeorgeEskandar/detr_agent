@@ -1,32 +1,45 @@
+FROM pytorch/pytorch:1.9.0-cuda10.2-cudnn7-runtime
 
-# Use the official PyTorch image with CUDA support
-FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
+# Set the working directory
+WORKDIR /workspace
 
-# Set working directory
-WORKDIR /app
-
-# Install basic utilities
+# Install necessary system packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    git \
     gcc \
-    wget \
-    && apt-get clean && \
+    git \
+    wget && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install Miniconda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh
 
-# Ensure Python 3.9 is used and update pip
-RUN conda install python=3.9 && \
-    pip install --upgrade pip
+# Update PATH environment variable
+ENV PATH="/opt/conda/bin:$PATH"
 
-# Install Python dependencies
-RUN pip install torch==2.2.2 torchvision==0.17.0 cython && \
-    pip install git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI && \
-    pip install scipy onnx onnxruntime submitit panopticapi
+# Create and activate a conda environment
+RUN conda create -n detr_env python=3.9 -y && \
+    echo "source activate detr_env" > ~/.bashrc
 
-# Expose any necessary ports if required by the model\EXPOSE 8000 # Example
+# Activate the environment
+SHELL ["/bin/bash", "-c", "source activate detr_env"]
 
-# Run the model or script 
-CMD ["python", "YOUR_MODEL_SCRIPT.py"]
+# Install conda packages
+RUN conda install -y \
+    cython \
+    pycocotools \
+    scipy=1.9.0
+
+# Install Python packages
+RUN conda install -y torchvision=0.10.0
+
+# Copy the project files into the docker working directory
+COPY . /workspace
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+# Define the command to run the model
+CMD ["python", "main.py"]
