@@ -12,7 +12,7 @@
         && rm -rf /var/lib/apt/lists/*
         
     # Install Miniconda
-    ENV PATH="/root/miniconda3/bin:\$PATH"
+    ENV PATH="/root/miniconda3/bin:$PATH"
     RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
         && /bin/bash Miniconda3-latest-Linux-x86_64.sh -b \
         && rm Miniconda3-latest-Linux-x86_64.sh
