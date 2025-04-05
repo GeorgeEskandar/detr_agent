@@ -13,6 +13,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Clean up Docker resources
+        run: |
+          docker container prune -f
+          docker image prune -af
+          docker volume prune -f
+          docker builder prune -af
+
       - name: Checkout code
         uses: actions/checkout@v2
 
