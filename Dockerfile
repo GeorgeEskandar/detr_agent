@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone the repository
-RUN git clone https://github.com/facebookresearch/detr.git /workspace/detr
+RUN git clone https://github.com/facebookresearch/detr.git/workspace/detr
 
 # Install PyTorch, torchvision
 RUN conda install -y -c pytorch \
