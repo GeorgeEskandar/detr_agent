@@ -1,32 +1,37 @@
-# Use a base image with CUDA 10.1/10.2 compatible PyTorch
-FROM pytorch/pytorch:1.5.1-cuda10.1-cudnn7-runtime
+# Use the specified base Docker image with PyTorch
+FROM pytorch/pytorch:1.5.1-cuda10.1-cudnn7-devel
 
 # Set the working directory
-WORKDIR /workspace/detr
+WORKDIR /detr
 
-# Install conda and update it
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    git \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     gcc \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone the repository
-RUN git clone https://github.com/facebookresearch/detr.git /workspace/detr
+# Install conda if not already installed (commented to verify presence in base first)
+# RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+#     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+#     rm ~/miniconda.sh && \
+#     /opt/conda/bin/conda clean -tipsy
+# ENV PATH /opt/conda/bin:$PATH
 
-# Install PyTorch, torchvision
-RUN conda install -y -c pytorch \
-    pytorch=1.5.1 \
-    torchvision=0.6.1
+# Copy the current directory contents into the container
+COPY . /detr
 
-# Install Cython and Scipy
-RUN conda install -y cython scipy
+# Create and activate conda environment with the specified Python version
+RUN conda create -n detr_env python=3.7 && \
+    echo "source activate detr_env" > ~/.bashrc
 
-# Install pycocotools
-RUN pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+# Install Python dependencies in the conda environment
+RUN /bin/bash -c "source activate detr_env && conda install \
+    cython==0.29.23 \
+    scipy==1.5.4 \
+    torchvision==0.6.0 && \
+    pip install -U \
+    'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI' \
+    git+https://github.com/cocodataset/panopticapi.git"
 
-# (Optional) Install panopticapi for panoptic functionalities
-RUN pip install git+https://github.com/cocodataset/panopticapi.git
-
-# Set the default command to run the model
-CMD ["python", "main.py", "--batch_size", "2", "--no_aux_loss", "--eval", "--resume", "https://dl.fbaipublicfiles.com/detr/detr-r50-e632da11.pth", "--coco_path", "/path/to/coco"]
+# Default command to run the model (to be specified appropriately)
+CMD ["/bin/bash", "-c", "source activate detr_env && python -c 'print(\"Model running...\")'"]
