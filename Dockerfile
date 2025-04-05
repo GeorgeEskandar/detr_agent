@@ -1,50 +1,39 @@
+# Use a base image with CUDA 10.1/10.2 compatible PyTorch
+FROM pytorch/pytorch:1.5.1-cuda10.1-cudnn7-runtime
 
-# Use the official CUDA image from NVIDIA optimized for PyTorch
-FROM nvidia/cuda:10.2-cudnn8-devel-ubuntu18.04
+# Set the working directory
+WORKDIR /workspace/detr
 
-# Set up environment variables
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PATH=/opt/conda/bin:$PATH
-
-# Install basic utilities
-RUN apt-get update --fix-missing && apt-get install -y \
+# Install conda and update it
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
-    git \
-    curl \
-    ca-certificates \
-    sudo \
-    bzip2 \
-    libx11-6 \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Miniconda and Python 3.7
+# Add Miniconda to the path
+ENV PATH /opt/conda/bin:$PATH
+
+# Install Miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh && \
-    /opt/conda/bin/conda clean -tipsy && \
-    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate base" >> ~/.bashrc
+    /opt/conda/bin/conda clean -tipsy
 
-# Create a conda environment with PyTorch and Torchvision
-RUN conda install -c pytorch \
-    pytorch=1.5.0 \
-    torchvision=0.6.0 \
-    cudatoolkit=10.2
+# Clone the repository
+RUN git clone https://github.com/facebookresearch/detr.git /workspace/detr
 
-# Install additional dependencies
-RUN pip install cython && \
-    pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+# Install PyTorch, torchvision
+RUN conda install -y -c pytorch \
+    pytorch=1.5.1 \
+    torchvision=0.6.1
 
-# Optional: Install additional tools for panoptic segmentation
-RUN pip install 'git+https://github.com/cocodataset/panopticapi.git'
+# Install Cython and Scipy
+RUN conda install -y cython scipy
 
-# Set the working directory
-WORKDIR /detr
+# Install pycocotools
+RUN pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 
-# Copy the repository files
-COPY . .
+# (Optional) Install panopticapi for panoptic functionalities
+RUN pip install git+https://github.com/cocodataset/panopticapi.git
 
-# Command to execute when running the container
+# Set the default command to run the model
 CMD ["python", "main.py", "--batch_size", "2", "--no_aux_loss", "--eval", "--resume", "https://dl.fbaipublicfiles.com/detr/detr-r50-e632da11.pth", "--coco_path", "/path/to/coco"]
