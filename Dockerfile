@@ -9,15 +9,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Add Miniconda to the path
-ENV PATH /opt/conda/bin:$PATH
-
-# Install Miniconda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
-    rm ~/miniconda.sh && \
-    /opt/conda/bin/conda clean -tipsy
-
 # Clone the repository
 RUN git clone https://github.com/facebookresearch/detr.git /workspace/detr
 
