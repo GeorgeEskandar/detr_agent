@@ -1,13 +1,33 @@
-FROM pytorch/pytorch:1.5-cuda10.1-cudnn7-runtime
+FROM nvidia/cuda:10.2-cudnn7-devel
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Set environment variables
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update -qq && \
-    apt-get install -y git vim libgtk2.0-dev && \
-    rm -rf /var/cache/apk/*
+# Install Python and necessary packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.8 \
+    python3-pip \
+    python3.8-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip --no-cache-dir install Cython
+# Install conda
+RUN pip3 install conda
 
-COPY requirements.txt /workspace
+# Set up the working directory
+WORKDIR /workspace/detr
 
-RUN pip --no-cache-dir install -r /workspace/requirements.txt
+# Clone the DETR repository
+RUN git clone https://github.com/facebookresearch/detr.git .
+
+# Create conda environment and install dependencies
+RUN conda install -c pytorch pytorch=1.5 torchvision=0.6 cudatoolkit=10.2 && \
+    conda install cython scipy && \
+    pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI' && \
+    pip install git+https://github.com/cocodataset/panopticapi.git
+
+# Copy project files into the container
+COPY . /workspace/detr
+
+# Command to run the model
+CMD ["python3", "main.py", "--batch_size", "2", "--no_aux_loss", "--eval", "--resume", "https://dl.fbaipublicfiles.com/detr/detr-r50-e632da11.pth", "--coco_path", "/path/to/coco"]
