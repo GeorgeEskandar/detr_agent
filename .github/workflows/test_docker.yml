@@ -16,6 +16,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Prune Docker system to free up space
+        run: docker system prune -af
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
