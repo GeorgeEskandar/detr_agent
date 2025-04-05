@@ -8,6 +8,7 @@ WORKDIR /workspace/detr
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     git \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone the repository
